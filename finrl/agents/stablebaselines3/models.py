@@ -23,6 +23,8 @@ from finrl import config
 from finrl.meta.env_stock_trading.env_stocktrading import StockTradingEnv
 from finrl.meta.preprocessor.preprocessors import data_split
 
+from src.models.sb3.dapo import DAPO
+
 # TQC (Kuznetsov et al., 2020, ICML) and CrossQ (Bhatt et al., 2024, ICLR)
 # are both off-policy, continuous-control actor-critics from sb3-contrib --
 # same `predict`/`learn` API as SAC/TD3 above, so they drop into every
@@ -39,6 +41,7 @@ MODELS = {
     "ppo": PPO,
     "tqc": TQC,
     "crossq": CrossQ,
+    "dapo": DAPO,
 }
 
 MODEL_KWARGS = {x: config.__dict__[f"{x.upper()}_PARAMS"] for x in MODELS.keys()}

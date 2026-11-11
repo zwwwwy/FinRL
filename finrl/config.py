@@ -70,6 +70,12 @@ CROSSQ_PARAMS = {
     "learning_starts": 100,
     "ent_coef": "auto",
 }
+DAPO_PARAMS = {
+    "n_steps": 2048,
+    "ent_coef": 0.01,
+    "learning_rate": 0.00025,
+    "batch_size": None,
+}
 ERL_PARAMS = {
     "learning_rate": 3e-5,
     "batch_size": 2048,
