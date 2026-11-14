@@ -1,3 +1,27 @@
+"""
+/opt/miniconda3/envs/finrl/bin/python /Users/zwy/FinRL/train.py
+<class 'stable_baselines3.common.vec_env.dummy_vec_env.DummyVecEnv'>
+{'n_steps': 2000, 'ent_coef': 0.01, 'learning_rate': 0.00025, 'batch_size': None, 'stock_dim': 84, 'alpha': 3.0, 'beta': 1.0}
+Using cpu device
+Logging to result/dapo
+-----------------------------------
+| time/              |            |
+|    fps             | 211        |
+|    iterations      | 1          |
+|    time_elapsed    | 9          |
+|    total_timesteps | 2000       |
+| train/             |            |
+|    reward          | -1.7796059 |
+|    reward_max      | 366726.97  |
+|    reward_mean     | 176.12946  |
+|    reward_min      | -14626.81  |
+-----------------------------------
+/opt/miniconda3/envs/finrl/lib/python3.13/site-packages/numpy/_core/fromnumeric.py:3862: RuntimeWarning: Mean of empty slice
+  return _methods._mean(a, axis=axis, dtype=dtype,
+/opt/miniconda3/envs/finrl/lib/python3.13/site-packages/numpy/_core/_methods.py:142: RuntimeWarning: invalid value encountered in scalar divide
+  ret = ret.dtype.type(ret / rcount)
+"""
+
 from __future__ import annotations
 
 from typing import List
@@ -496,7 +520,6 @@ class StockTradingEnv(gym.Env):
             active = self.data[self.member_col].to_numpy(dtype=bool)
             values[~active] = 0
         return values.tolist()
-
 
     def _get_date(self):
         if len(self.df.tic.unique()) > 1:

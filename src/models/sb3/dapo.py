@@ -93,39 +93,39 @@ class DAPO(OnPolicyAlgorithm):
     }
 
     def __init__(
-            self,
-            policy: str | type[ActorCriticPolicy],
-            env: GymEnv | str,
-            stock_dim: int,
-            learning_rate: float | Schedule = 3e-4,
-            n_steps: int = 2048,
-            batch_size: int = 64,
-            n_epochs: int = 10,
-            gamma: float = 0.99,
-            gae_lambda: float = 0.95,
-            clip_range: float | Schedule = 0.2,
-            clip_range_vf: None | float | Schedule = None,
-            normalize_advantage: bool = True,
-            ent_coef: float = 0.0,
-            vf_coef: float = 0.5,
-            max_grad_norm: float = 0.5,
-            use_sde: bool = False,
-            sde_sample_freq: int = -1,
-            rollout_buffer_class: type[DapoBuffer] | None = DapoBuffer,
-            rollout_buffer_kwargs: dict[str, Any] | None = None,
-            target_kl: float | None = None,
-            stats_window_size: int = 100,
-            tensorboard_log: str | None = None,
-            policy_kwargs: dict[str, Any] | None = None,
-            verbose: int = 0,
-            seed: int | None = None,
-            device: th.device | str = "auto",
-            _init_setup_model: bool = True,
-            group_len: int = 10,
-            clip_low: float = 0.2,
-            clip_high: float = 0.32,
-            alpha=0,
-            beta=0,
+        self,
+        policy: str | type[ActorCriticPolicy],
+        env: GymEnv | str,
+        stock_dim: int = 0,
+        learning_rate: float | Schedule = 3e-4,
+        n_steps: int = 3000,
+        batch_size: int = 100,
+        n_epochs: int = 10,
+        gamma: float = 0.99,
+        gae_lambda: None = None,
+        clip_range: None = None,
+        clip_range_vf: None = None,
+        normalize_advantage: bool = True,
+        ent_coef: float = 0.0,
+        vf_coef: None = None,
+        max_grad_norm: float = 0.5,
+        use_sde: bool = False,
+        sde_sample_freq: int = -1,
+        rollout_buffer_class: type[DapoBuffer] | None = DapoBuffer,
+        rollout_buffer_kwargs: dict[str, Any] | None = None,
+        target_kl: float | None = None,
+        stats_window_size: int = 100,
+        tensorboard_log: str | None = None,
+        policy_kwargs: dict[str, Any] | None = None,
+        verbose: int = 0,
+        seed: int | None = None,
+        device: th.device | str = "auto",
+        _init_setup_model: bool = True,
+        group_len: int = 10,
+        clip_low: float = 0.2,
+        clip_high: float = 0.28,
+        alpha=3,
+        beta=1,
     ):
         super().__init__(
             policy,
@@ -190,6 +190,8 @@ class DAPO(OnPolicyAlgorithm):
         self.normalize_advantage = normalize_advantage
         self.target_kl = target_kl
 
+        if stock_dim <= 0 and _init_setup_model:
+            raise ValueError("stock_dim must be a positive integer")
         self.stock_dim = stock_dim
         self.group_len = group_len
         self.clip_low = clip_low
@@ -203,22 +205,12 @@ class DAPO(OnPolicyAlgorithm):
     def _setup_model(self) -> None:
         super()._setup_model()
 
-        # Initialize schedules for policy/value clipping
-        self.clip_range = FloatSchedule(self.clip_range)
-        if self.clip_range_vf is not None:
-            if isinstance(self.clip_range_vf, (float, int)):
-                assert self.clip_range_vf > 0, (
-                    "`clip_range_vf` must be positive, pass `None` to deactivate vf clipping"
-                )
-
-            self.clip_range_vf = FloatSchedule(self.clip_range_vf)
-
     def collect_rollouts(
-            self,
-            env: VecEnv,
-            callback: BaseCallback,
-            rollout_buffer: DapoBuffer,
-            n_rollout_steps: int,
+        self,
+        env: VecEnv,
+        callback: BaseCallback,
+        rollout_buffer: DapoBuffer,
+        n_rollout_steps: int,
     ) -> bool:
         """
         修改父类函数中rewards计算方法，改为adj rewards，只改计算方法不改名称
@@ -287,8 +279,9 @@ class DAPO(OnPolicyAlgorithm):
                 # 调整reward
                 propotion = env_action * get_stock_price(next_state, self.stock_dim)
                 base_reward = cal_portfolio_return(
-                    env_action, get_stock_price(obs_tensor.numpy(), self.stock_dim),
-                    get_stock_risk(next_state, self.stock_dim)
+                    env_action,
+                    get_stock_price(obs_tensor.numpy(), self.stock_dim),
+                    get_stock_price(next_state, self.stock_dim),
                 )
                 total_propotion = np.sum(propotion)
 
@@ -307,7 +300,7 @@ class DAPO(OnPolicyAlgorithm):
                     S_ti = np.dot(weight, f_sentiment.T)
                     R_ti = np.dot(weight, f_fisk.T)
 
-                    adj_reward = base_reward * (S_ti ** self.alpha) / (R_ti ** self.beta + 1e-8)
+                    adj_reward = base_reward * (S_ti**self.alpha) / (R_ti**self.beta + 1e-8)
 
                 # adj_reward = np.clip(adj_reward, 1 - self.clip_low, 1 + self.clip_high)
 
@@ -330,9 +323,9 @@ class DAPO(OnPolicyAlgorithm):
 
                 for idx, done in enumerate(dones):
                     if (
-                            done
-                            and infos[idx].get("terminal_observation") is not None
-                            and infos[idx].get("TimeLimit.truncated", False)
+                        done
+                        and infos[idx].get("terminal_observation") is not None
+                        and infos[idx].get("TimeLimit.truncated", False)
                     ):
                         terminal_obs = self.policy.obs_to_tensor(
                             infos[idx]["terminal_observation"]
@@ -412,10 +405,7 @@ class DAPO(OnPolicyAlgorithm):
                 # Logging
                 pg_losses.append(policy_loss.item())
                 clip_fraction = th.mean(
-                    (
-                            (ratio < 1 - self.clip_low)
-                            | (ratio > 1 + self.clip_high)
-                    ).float()
+                    ((ratio < 1 - self.clip_low) | (ratio > 1 + self.clip_high)).float()
                 ).item()
 
                 clip_fractions.append(clip_fraction)
@@ -476,13 +466,13 @@ class DAPO(OnPolicyAlgorithm):
         self.logger.record("train/n_updates", self._n_updates, exclude="tensorboard")
 
     def learn(
-            self: SelfDAPO,
-            total_timesteps: int,
-            callback: MaybeCallback = None,
-            log_interval: int = 1,
-            tb_log_name: str = "DAPO",
-            reset_num_timesteps: bool = True,
-            progress_bar: bool = False,
+        self: SelfDAPO,
+        total_timesteps: int,
+        callback: MaybeCallback = None,
+        log_interval: int = 1,
+        tb_log_name: str = "DAPO",
+        reset_num_timesteps: bool = True,
+        progress_bar: bool = False,
     ) -> SelfDAPO:
         return super().learn(
             total_timesteps=total_timesteps,

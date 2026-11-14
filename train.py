@@ -55,34 +55,69 @@ env_train, _ = e_train_gym.get_sb_env()
 print(type(env_train))
 
 # %%
-DAPO_PARAMS = {
+DAPO_PARAMS1 = {
     "n_steps": 2000,
     "ent_coef": 0.01,
     "learning_rate": 0.00025,
     "batch_size": None,
     "stock_dim": stock_dim,
+    "alpha": 1.0,
+    "beta": 5.0,
 }
 
 agent = DRLAgent(env=env_train)
 
-model_dapo = agent.get_model("dapo", model_kwargs=DAPO_PARAMS)
-tmp_path = "result/dapo"
+model_dapo = agent.get_model("dapo", model_kwargs=DAPO_PARAMS1)
+tmp_path = "result/dapo_alpha=1_beta=5"
 new_logger_dapo = configure(tmp_path, ["stdout", "csv", "tensorboard"])
 model_dapo.set_logger(new_logger_dapo)
 trained_dapo = agent.train_model(model=model_dapo, tb_log_name="dapo", total_timesteps=20000)
-trained_dapo.save("trained/agent_dapo")
+trained_dapo.save("trained/dapo_alpha=1_beta=5")
 
+DAPO_PARAMS2 = {
+    "n_steps": 2000,
+    "ent_coef": 0.01,
+    "learning_rate": 0.00025,
+    "batch_size": None,
+    "stock_dim": stock_dim,
+    "alpha": 5.0,
+    "beta": 1.0,
+}
+
+model_dapo = agent.get_model("dapo", model_kwargs=DAPO_PARAMS2)
+tmp_path = "result/dapo_alpha=5_beta=1"
+new_logger_dapo = configure(tmp_path, ["stdout", "csv", "tensorboard"])
+model_dapo.set_logger(new_logger_dapo)
+trained_dapo = agent.train_model(model=model_dapo, tb_log_name="dapo", total_timesteps=20000)
+trained_dapo.save("trained/dapo_alpha=5_beta=1")
+
+DAPO_PARAMS3 = {
+    "n_steps": 2000,
+    "ent_coef": 0.01,
+    "learning_rate": 0.00025,
+    "batch_size": None,
+    "stock_dim": stock_dim,
+    "alpha": 3.0,
+    "beta": 3.0,
+}
+
+model_dapo = agent.get_model("dapo", model_kwargs=DAPO_PARAMS2)
+tmp_path = "result/dapo_alpha=3_beta=3"
+new_logger_dapo = configure(tmp_path, ["stdout", "csv", "tensorboard"])
+model_dapo.set_logger(new_logger_dapo)
+trained_dapo = agent.train_model(model=model_dapo, tb_log_name="dapo", total_timesteps=20000)
+trained_dapo.save("trained/dapo_alpha=3_beta=3")
 
 # %%
 
 RESULTS_DIR = "result"
 TRAINED_MODEL_DIR = "trained"
 
-if_using_a2c = True
-if_using_ddpg = True
-if_using_ppo = True
-if_using_td3 = True
-if_using_sac = True
+if_using_a2c = False
+if_using_ddpg = False
+if_using_ppo = False
+if_using_td3 = False
+if_using_sac = False
 
 # --- Agent 1: A2C ---
 agent = DRLAgent(env=env_train)
@@ -98,7 +133,7 @@ trained_a2c = (
     else None
 )
 if if_using_a2c:
-    trained_a2c.save(TRAINED_MODEL_DIR + "/agent_a2c")
+    trained_a2c.save(TRAINED_MODEL_DIR + "/a2c")
 
 # --- Agent 2: DDPG ---
 agent = DRLAgent(env=env_train)
@@ -114,7 +149,7 @@ trained_ddpg = (
     else None
 )
 if if_using_ddpg:
-    trained_ddpg.save(TRAINED_MODEL_DIR + "/agent_ddpg")
+    trained_ddpg.save(TRAINED_MODEL_DIR + "/ddpg")
 
 # --- Agent 3: PPO ---
 agent = DRLAgent(env=env_train)
@@ -136,7 +171,7 @@ trained_ppo = (
     else None
 )
 if if_using_ppo:
-    trained_ppo.save(TRAINED_MODEL_DIR + "/agent_ppo")
+    trained_ppo.save(TRAINED_MODEL_DIR + "/ppo")
 
 # --- Agent 4: TD3 ---
 agent = DRLAgent(env=env_train)
@@ -157,7 +192,7 @@ trained_td3 = (
     else None
 )
 if if_using_td3:
-    trained_td3.save(TRAINED_MODEL_DIR + "/agent_td3")
+    trained_td3.save(TRAINED_MODEL_DIR + "/td3")
 
 # --- Agent 5: SAC ---
 agent = DRLAgent(env=env_train)
@@ -180,6 +215,6 @@ trained_sac = (
     else None
 )
 if if_using_sac:
-    trained_sac.save(TRAINED_MODEL_DIR + "/agent_sac")
+    trained_sac.save(TRAINED_MODEL_DIR + "/sac")
 
 print("All agents trained and saved to", TRAINED_MODEL_DIR)
