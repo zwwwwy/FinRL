@@ -4,6 +4,7 @@ import os
 from finrl.agents.stablebaselines3.models import MODELS
 from src.env.env_stocktrading_sentiment_risk import StockTradingEnv
 from finrl.agents.stablebaselines3.models import DRLAgent
+from src.common.utils import cal_alg_metrics
 
 
 class BackTest:
@@ -52,6 +53,29 @@ class BackTest:
 
         # print(result_dict)
         self.result = pd.DataFrame(result_dict)
+
+    def get_backtest_metrics(self, use_persent=False, format_str=".3f", use_tex=True):
+        csv_result_data = []
+        for alg in self.result.columns:
+            alg_data = self.result[alg].copy()
+            metric = cal_alg_metrics(alg_data)
+            if use_persent:
+                is_percentage = ~metric.index.to_series().str.contains(
+                    "sharpe|夏普", case=False, regex=True
+                )
+                metric.loc[is_percentage] = metric.loc[is_percentage].map(
+                    lambda x: f"{x * 100:{format_str}}%"
+                )
+                metric.loc[~is_percentage] = metric.loc[~is_percentage].map(
+                    lambda x: f"{x:{format_str}}"
+                )
+            else:
+                metric = metric.map(lambda x: f"{x:{format_str}}")
+            csv_result_data.append(metric)
+        metrics = pd.DataFrame(csv_result_data)
+        metrics.to_csv("backtest_result.csv")
+        if use_tex:
+            metrics.to_latex("backtest_result.tex")
 
     def plot_backtest_result(
         self,

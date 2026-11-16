@@ -153,3 +153,5 @@ dataset/
 result/
 results/
 trained/
+
+test.py

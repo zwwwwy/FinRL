@@ -33,7 +33,7 @@ buy_cost_list = sell_cost_list = [0.001] * stock_dimension
 num_stock_shares = [0] * stock_dimension
 
 
-TRAINED_MODEL_DIR = "trained"
+TRAINED_MODEL_DIR = "trained/only_dapo"
 
 # DAPO has a custom required constructor argument that SB3 does not restore
 # automatically from the saved model.
@@ -55,3 +55,4 @@ env_kwargs = {
 back_tester = BackTest(trade, TRAINED_MODEL_DIR)
 back_tester.backtest(env=StockTradingEnv, env_kwargs=env_kwargs)
 back_tester.plot_backtest_result()
+back_tester.get_backtest_metrics(use_persent=True, format_str=".2f")
